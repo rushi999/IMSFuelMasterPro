@@ -34,9 +34,9 @@ var vehiclePerf = [
    ============================================================ */
 function updateClock() {
   var now = new Date();
-  var hh  = String(now.getHours()).padStart(2,'0');
-  var mm  = String(now.getMinutes()).padStart(2,'0');
-  var ss  = String(now.getSeconds()).padStart(2,'0');
+  var hh  = pad2(now.getHours());
+  var mm  = pad2(now.getMinutes());
+  var ss  = pad2(now.getSeconds());
   var el  = document.getElementById('navClock');
   if (el) el.innerHTML = '<i class="fa fa-clock-o"></i> ' + hh + ':' + mm + ':' + ss;
 
@@ -46,6 +46,9 @@ function updateClock() {
       weekday:'long', year:'numeric', month:'long', day:'numeric'
     });
   }
+}
+function pad2(n) {
+  return (n < 10 ? '0' : '') + n;
 }
 setInterval(updateClock, 1000);
 updateClock();

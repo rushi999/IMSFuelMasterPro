@@ -98,6 +98,24 @@
         </div>
       </form>
 
+      <!-- Client-side table filters -->
+      <div class="ims-report-filter-row">
+        <div class="input-group ims-report-search">
+          <span class="input-group-addon"><i class="fa fa-search"></i></span>
+          <input type="text" id="dailySearchBox" class="form-control ims-input-sm"
+                 placeholder="Search req no, vehicle, driver, RCAV, department, remarks...">
+        </div>
+        <select id="dailyFuelFilter" class="form-control ims-select-sm">
+          <option value="">All Fuel</option>
+          <option value="DIESEL">Diesel</option>
+          <option value="PETROL">Petrol</option>
+        </select>
+        <button type="button" class="btn btn-default btn-sm" onclick="clearDailyTableFilters()">
+          <i class="fa fa-times"></i> Clear
+        </button>
+        <span id="dailyFilterCount" class="ims-filter-count"></span>
+      </div>
+
       <!-- Daily sheet table -->
       <div class="panel panel-default ims-panel ims-report-panel" id="dailyPrintArea">
         <div class="panel-heading ims-report-header">
@@ -163,7 +181,7 @@
               <c:choose>
                 <c:when test="${not empty dailyList}">
                   <c:forEach var="e" items="${dailyList}" varStatus="st">
-                  <tr>
+                  <tr data-report-row="1" data-fuel="${e.fuelType}">
                     <td>${st.count}</td>
                     <td class="ims-mono">${e.reqNo}</td>
                     <td class="ims-mono" style="white-space:nowrap">
@@ -555,14 +573,30 @@
 .ims-rcpt-val{font-family:monospace;font-size:13px;font-weight:600;color:var(--txt1,#e2eaf8);word-break:break-word}
 .ims-rcpt-qty{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-top:6px;border-radius:6px;background:rgba(59,158,255,0.08);border:1px solid rgba(59,158,255,0.20)}
 .ims-rcpt-qty-lbl{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--txt2,#8ba4c8)}
-.ims-rcpt-qty-val{font-family:monospace;font-size:20px;font-weight:800;color:#00d68f}
-body.ims-light .ims-rcpt-cell{border-bottom-color:rgba(0,0,60,0.07);border-right-color:rgba(0,0,60,0.05)}
-body.ims-light .ims-rcpt-key{color:#7090b0}
-body.ims-light .ims-rcpt-val{color:#1a2340}
-body.ims-light .ims-rcpt-qty{background:rgba(26,110,204,0.06);border-color:rgba(26,110,204,0.18)}
-body.ims-light .ims-rcpt-qty-lbl{color:#5070a0}
-body.ims-light .ims-rcpt-qty-val{color:#007a58}
-</style>
+  .ims-rcpt-qty-val{font-family:monospace;font-size:20px;font-weight:800;color:#00d68f}
+  .ims-report-filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-8px 0 12px}
+  .ims-report-search{max-width:520px;min-width:280px;flex:1}
+  .ims-filter-count{font-size:12px;color:var(--txt3,#4a6080);letter-spacing:.4px}
+  #dailyTable th:last-child,
+  #dailyTable td:last-child{
+    position:sticky;
+    right:0;
+    z-index:3;
+    background:var(--card,#111827);
+    box-shadow:-8px 0 14px rgba(0,0,0,0.14);
+    min-width:72px;
+    text-align:center;
+  }
+  #dailyTable thead th:last-child{z-index:4}
+  body.ims-light .ims-rcpt-cell{border-bottom-color:rgba(0,0,60,0.07);border-right-color:rgba(0,0,60,0.05)}
+  body.ims-light .ims-rcpt-key{color:#7090b0}
+  body.ims-light .ims-rcpt-val{color:#1a2340}
+  body.ims-light .ims-rcpt-qty{background:rgba(26,110,204,0.06);border-color:rgba(26,110,204,0.18)}
+  body.ims-light .ims-rcpt-qty-lbl{color:#5070a0}
+  body.ims-light .ims-rcpt-qty-val{color:#007a58}
+  body.ims-light #dailyTable th:last-child,
+  body.ims-light #dailyTable td:last-child{background:#fff}
+  </style>
 
 <script>
 var IMS_CTX = '<%=request.getContextPath()%>';
@@ -571,51 +605,87 @@ if(typeof _rcavData==='undefined')  _rcavData=[];
 var _currentReceiptRows = [];
 var _currentReceiptTitle = '';
 
-/* ── Default dates ── */
-$(document).ready(function(){
-  var now = new Date();
-  var td  = now.toISOString().split('T')[0];
-  if (!$('#fromDatePick').val()) $('#fromDatePick').val(td);
-  if (!$('#toDatePick').val())   $('#toDatePick').val(td);
-  /* Ensure toDate >= fromDate */
-  $('#fromDatePick').on('change', function(){
-    if ($('#toDatePick').val() < this.value) $('#toDatePick').val(this.value);
-  });
-});
+	/* ── Default dates ── */
+	$(document).ready(function(){
+	  var now = new Date();
+	  var td  = imsLocalDate(now);
+	  if (!$('#fromDatePick').val()) $('#fromDatePick').val(td);
+	  if (!$('#toDatePick').val())   $('#toDatePick').val(td);
+	  /* Ensure toDate >= fromDate */
+	  $('#fromDatePick').on('change', function(){
+	    if ($('#toDatePick').val() < this.value) $('#toDatePick').val(this.value);
+	  });
+	  $('#dailySearchBox,#dailyFuelFilter').on('input change', filterDailyTable);
+	  filterDailyTable();
+	});
+
+	function imsLocalDate(d) {
+	  var yyyy = d.getFullYear();
+	  var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+	  var dd = ('0' + d.getDate()).slice(-2);
+	  return yyyy + '-' + mm + '-' + dd;
+	}
 
 /* ── Quick date helpers ── */
-function setToday() {
-  var td = new Date().toISOString().split('T')[0];
-  $('#fromDatePick,#toDatePick').val(td);
-}
-function setThisWeek() {
-  var now = new Date();
-  var day = now.getDay(); /* 0=Sun */
-  var mon = new Date(now); mon.setDate(now.getDate() - (day===0?6:day-1));
-  $('#fromDatePick').val(mon.toISOString().split('T')[0]);
-  $('#toDatePick').val(now.toISOString().split('T')[0]);
-}
-function setThisMonth() {
-  var now = new Date();
-  var first = new Date(now.getFullYear(), now.getMonth(), 1);
-  $('#fromDatePick').val(first.toISOString().split('T')[0]);
-  $('#toDatePick').val(now.toISOString().split('T')[0]);
-}
+	window.setToday = function() {
+	  var td = imsLocalDate(new Date());
+	  $('#fromDatePick,#toDatePick').val(td);
+	};
+	window.setThisWeek = function() {
+	  var now = new Date();
+	  var day = now.getDay(); /* 0=Sun */
+	  var mon = new Date(now); mon.setDate(now.getDate() - (day===0?6:day-1));
+	  $('#fromDatePick').val(imsLocalDate(mon));
+	  $('#toDatePick').val(imsLocalDate(now));
+	};
+	window.setThisMonth = function() {
+	  var now = new Date();
+	  var first = new Date(now.getFullYear(), now.getMonth(), 1);
+	  $('#fromDatePick').val(imsLocalDate(first));
+	  $('#toDatePick').val(imsLocalDate(now));
+	};
+
+	window.clearDailyTableFilters = function() {
+	  $('#dailySearchBox').val('');
+	  $('#dailyFuelFilter').val('');
+	  filterDailyTable();
+	};
+
+	function filterDailyTable() {
+	  var q = ($('#dailySearchBox').val() || '').toLowerCase();
+	  var fuel = ($('#dailyFuelFilter').val() || '').toUpperCase();
+	  var total = 0, visible = 0;
+	  $('#dailyTable tbody tr[data-report-row="1"]').each(function(){
+	    total++;
+	    var rowText = $(this).text().toLowerCase();
+	    var rowFuel = ($(this).attr('data-fuel') || '').toUpperCase();
+	    var matchText = !q || rowText.indexOf(q) !== -1;
+	    var matchFuel = !fuel || rowFuel === fuel;
+	    var show = matchText && matchFuel;
+	    $(this).toggle(show);
+	    if (show) visible++;
+	  });
+	  if (total > 0) {
+	    $('#dailyFilterCount').text('Showing ' + visible + ' of ' + total + ' records');
+	  } else {
+	    $('#dailyFilterCount').text('');
+	  }
+	}
 
 /* ── Excel exports ── */
-function exportDailyExcel() {
-  var url = IMS_CTX+'/ReportServlet?reportType=DAILY&export=excel' +
-    '&fromDate='+$('#fromDatePick').val() +
-    '&toDate='  +$('#toDatePick').val() +
-    '&category='+$('select[name=category]').val();
-  window.location.href = url;
-}
-function exportRCAVExcel() {
-  var url = IMS_CTX+'/ReportServlet?reportType=MONTHLY&export=excel' +
-    '&month='+$('#rcavMonth').val()+'&year='+$('#rcavYear').val() +
-    '&rcavCategory='+encodeURIComponent($('select[name="rcavCategory"]').val()||'');
-  window.location.href = url;
-}
+	window.exportDailyExcel = function() {
+	  var url = IMS_CTX+'/ReportServlet?reportType=DAILY&export=excel' +
+	    '&fromDate='+$('#fromDatePick').val() +
+	    '&toDate='  +$('#toDatePick').val() +
+	    '&category='+$('select[name=category]').val();
+	  window.location.href = url;
+	};
+	window.exportRCAVExcel = function() {
+	  var url = IMS_CTX+'/ReportServlet?reportType=MONTHLY&export=excel' +
+	    '&month='+$('#rcavMonth').val()+'&year='+$('#rcavYear').val() +
+	    '&rcavCategory='+encodeURIComponent($('select[name="rcavCategory"]').val()||'');
+	  window.location.href = url;
+	};
 
 /* ── Daily row receipt (Fix #6: full data) ── */
 
@@ -665,22 +735,22 @@ function showRowReceiptModal(rows, qty) {
   $('#rowReceiptModal').modal('show');
 }
 
-function viewDailyReceipt(idx) {
-  if (typeof _dailyData === 'undefined' || !_dailyData ||
-      idx < 0 || idx >= _dailyData.length) {
+	window.viewDailyReceipt = function(idx) {
+	  if (typeof _dailyData === 'undefined' || !_dailyData ||
+	      idx < 0 || idx >= _dailyData.length) {
     alert('No receipt data. Please generate the report first.');
     return;
   }
   var e    = _dailyData[idx];
   var rows = buildReceiptRows(e);
-  var qty  = parseFloat(e.qtyIssued || 0).toFixed(1);
-  window._receiptTitle = 'Fuel Receipt - ' + (e.vehicleNo || e.reqNo || '');
-  showRowReceiptModal(rows, qty);
-}
+	  var qty  = parseFloat(e.qtyIssued || 0).toFixed(1);
+	  window._receiptTitle = 'Fuel Receipt - ' + (e.vehicleNo || e.reqNo || '');
+	  showRowReceiptModal(rows, qty);
+	};
 
-function viewRcavReceipt(idx) {
-  if (typeof _rcavData === 'undefined' || !_rcavData ||
-      idx < 0 || idx >= _rcavData.length) return;
+	window.viewRcavReceipt = function(idx) {
+	  if (typeof _rcavData === 'undefined' || !_rcavData ||
+	      idx < 0 || idx >= _rcavData.length) return;
   var e = _rcavData[idx];
   var rows = [
     ['Period',       e.period      || '--', 'full'],
@@ -695,12 +765,12 @@ function viewRcavReceipt(idx) {
      'Petrol Issued',(e.petrol && e.petrol !== '0') ? e.petrol+' L' : '--']
   ];
   window._rowReceiptData = rows;
-  window._rowReceiptQty  = e.totalFuel || '--';
-  window._receiptTitle   = 'RCAV - ' + (e.vehicleNo || '');
-  showRowReceiptModal(rows, e.totalFuel ? e.totalFuel+' L' : '--');
-}
+	  window._rowReceiptQty  = e.totalFuel || '--';
+	  window._receiptTitle   = 'RCAV - ' + (e.vehicleNo || '');
+	  showRowReceiptModal(rows, e.totalFuel || '--');
+	};
 
-function downloadRowPDF() {
+	window.downloadRowPDF = function() {
   var rows  = window._rowReceiptData || [];
   var qty   = window._rowReceiptQty  || '--';
   var title = window._receiptTitle   || 'Fuel Dispense Receipt';
@@ -709,9 +779,9 @@ function downloadRowPDF() {
     if (r.length === 4) {
       tRows += '<tr><td class="k">' + r[0] + '</td><td class="v">' + r[1] + '</td>' +
                '<td class="k">' + r[2] + '</td><td class="v">' + r[3] + '</td></tr>';
-    } else {
-      tRows += '<tr><td class="k">' + r[0] + '</td><td class="v" colspan="3">' + r[1] + '</td></tr>';
-    }
+	    } else {
+	      tRows += '<tr><td class="k">' + r[0] + '</td><td class="v" colspan="3">' + r[1] + '</td></tr>';
+	    }
   });
   var html =
     '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title>' +
@@ -762,7 +832,7 @@ function downloadRowPDF() {
       }, 2000);
     }, 300);
   };
-}
+	};
 
 </script>
 
