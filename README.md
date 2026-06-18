@@ -120,9 +120,9 @@ Place the following files (download once, keep offline):
 
 | Username | Password   | Role     |
 |----------|------------|----------|
-| admin    | barc@1234  | ADMIN    |
-| operator1| barc@1234  | OPERATOR |
-| operator2| barc@1234  | OPERATOR |
+| admin    | ******  | ADMIN    |
+| operator1| ******  | OPERATOR |
+| operator2| ******  | OPERATOR |
 
 ---
 
