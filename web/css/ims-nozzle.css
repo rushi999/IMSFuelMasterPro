@@ -1,0 +1,201 @@
+/* ============================================================
+   IMS FUEL MASTER PRO — Nozzle Animation + Tank 3D Styles
+   ims-nozzle.css  |  Include in header.jsp after ims-main.css
+   ============================================================ */
+
+/* ── Nozzle overlay backdrop ── */
+#nozzleOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  background: rgba(5, 8, 18, 0.88);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  animation: nozzleFadeIn 0.3s ease;
+}
+#nozzleOverlay.hidden { display: none !important; }
+
+@keyframes nozzleFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes nozzleFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.nozzle-container {
+  text-align: center;
+  padding: 30px 40px;
+  background: rgba(15, 22, 40, 0.9);
+  border: 1px solid rgba(59,158,255,0.25);
+  border-radius: 20px;
+  box-shadow: 0 0 60px rgba(59,158,255,0.15),
+              0 20px 60px rgba(0,0,0,0.5);
+  min-width: 280px;
+}
+
+.nozzle-title {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #3b9eff;
+  margin-bottom: 6px;
+  text-shadow: 0 0 20px rgba(59,158,255,0.5);
+  animation: titlePulse 1.5s ease infinite;
+}
+@keyframes titlePulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.7; }
+}
+
+.nozzle-subtitle {
+  font-size: 12px;
+  color: #8ba4c8;
+  margin-top: 12px;
+  letter-spacing: 1px;
+}
+
+/* Progress bar under animation */
+.nozzle-progress-wrap {
+  width: 220px;
+  height: 5px;
+  background: rgba(59,158,255,0.1);
+  border-radius: 3px;
+  margin: 14px auto 0;
+  overflow: hidden;
+}
+#nozzleProgress {
+  height: 100%;
+  background: linear-gradient(90deg, #3b9eff, #00e5c3);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.08s linear;
+}
+
+/* Success state */
+.nozzle-success-icon {
+  font-size: 48px;
+  color: #00d68f;
+  display: none;
+  animation: successPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes successPop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ── Fuel drop particle effect ── */
+.fuel-drop {
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  opacity: 0;
+  animation: dropFall 1.2s ease-in forwards;
+  pointer-events: none;
+}
+@keyframes dropFall {
+  0%   { opacity: 0.9; transform: translateY(0) scale(1); }
+  80%  { opacity: 0.6; transform: translateY(40px) scale(0.8); }
+  100% { opacity: 0;   transform: translateY(60px) scale(0.3); }
+}
+
+/* ── Realistic 3D Tank card enhancements ── */
+.ims-tank-panel {
+  border-radius: 14px !important;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.2s;
+  overflow: hidden;
+}
+.ims-tank-panel:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3) !important;
+}
+
+/* Reflection gloss overlay on tank SVG */
+.tank-gloss {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%);
+  border-radius: 14px 14px 0 0;
+  pointer-events: none;
+}
+
+/* Light theme tank panel */
+body.ims-light .ims-tank-panel {
+  background: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+}
+body.ims-light .tank-alert {
+  animation: tankAlertLight 2s infinite;
+}
+@keyframes tankAlertLight {
+  0%,100% { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  50%      { box-shadow: 0 4px 20px rgba(255,71,87,0.25); }
+}
+
+/* ── Master save animation ── */
+#masterSaveOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  background: rgba(5,8,18,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px);
+}
+#masterSaveOverlay.active { display: flex; }
+.master-save-box {
+  background: rgba(15,22,40,0.95);
+  border: 1px solid rgba(0,229,195,0.3);
+  border-radius: 16px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 0 50px rgba(0,229,195,0.12);
+  min-width: 260px;
+}
+.master-save-title {
+  font-family: monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: #00e5c3;
+  margin-top: 12px;
+}
+.master-save-sub {
+  font-size: 11px;
+  color: #8ba4c8;
+  margin-top: 6px;
+}
+
+/* ── Wave animation (shared with tank SVG) ── */
+@keyframes waveAnim {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.tank-wave      { animation: waveAnim 3s linear infinite; }
+.tank-wave-slow { animation: waveAnim 5s linear infinite; }
+
+/* ── Tank alert pulse ── */
+@keyframes tankAlert {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,71,87,0); }
+  50%      { box-shadow: 0 0 0 8px rgba(255,71,87,0.2); }
+}
+.tank-alert { animation: tankAlert 2s infinite; }
+
+/* ── Bubbles in tank ── */
+.tank-bubble {
+  animation: bubbleRise 3s ease-in infinite;
+  opacity: 0;
+}
+@keyframes bubbleRise {
+  0%   { opacity: 0;   transform: translateY(0); }
+  20%  { opacity: 0.6; }
+  80%  { opacity: 0.3; }
+  100% { opacity: 0;   transform: translateY(-30px); }
+}
