@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- NetBeans Ant build file for IMS Fuel Master Pro -->
+<project name="IMSFuelMasterPro" default="dist" basedir=".">
+
+  <description>IMS Fuel Master Pro — BARC Transport Section</description>
+
+  <!-- ── Properties ── -->
+  <property name="src.dir"       value="src"/>
+  <property name="web.dir"       value="web"/>
+  <property name="build.dir"     value="build"/>
+  <property name="classes.dir"   value="${build.dir}/WEB-INF/classes"/>
+  <property name="lib.dir"       value="lib"/>
+  <property name="dist.dir"      value="dist"/>
+  <property name="war.name"      value="IMSFuelMasterPro"/>
+
+  <!-- JDK 1.7 source/target -->
+  <property name="javac.source"  value="1.7"/>
+  <property name="javac.target"  value="1.7"/>
+
+  <!-- ── Classpath ── -->
+  <path id="compile.cp">
+    <fileset dir="${lib.dir}">
+      <include name="**/*.jar"/>
+    </fileset>
+    <!-- NetBeans: add server lib -->
+    <fileset dir="${tomcat.home}/lib" erroronmissingdir="false">
+      <include name="servlet-api.jar"/>
+      <include name="jsp-api.jar"/>
+    </fileset>
+  </path>
+
+  <!-- ── Targets ── -->
+  <target name="init">
+    <mkdir dir="${classes.dir}"/>
+    <mkdir dir="${dist.dir}"/>
+  </target>
+
+  <target name="compile" depends="init">
+    <javac srcdir="${src.dir}"
+           destdir="${classes.dir}"
+           source="${javac.source}"
+           target="${javac.target}"
+           encoding="UTF-8"
+           debug="true"
+           includeantruntime="false">
+      <classpath refid="compile.cp"/>
+    </javac>
+  </target>
+
+  <target name="dist" depends="compile" description="Build WAR">
+    <!-- Copy web resources -->
+    <copy todir="${build.dir}">
+      <fileset dir="${web.dir}"/>
+    </copy>
+    <!-- Copy compiled classes -->
+    <copy todir="${classes.dir}">
+      <fileset dir="${src.dir}" excludes="**/*.java"/>
+    </copy>
+    <!-- Copy libs into WEB-INF/lib -->
+    <copy todir="${build.dir}/WEB-INF/lib">
+      <fileset dir="${lib.dir}" includes="*.jar" excludes="servlet-api.jar,jsp-api.jar"/>
+    </copy>
+    <!-- Create WAR -->
+    <war destfile="${dist.dir}/${war.name}.war" webxml="${build.dir}/WEB-INF/web.xml">
+      <fileset dir="${build.dir}" excludes="WEB-INF/web.xml"/>
+      <webinf dir="${build.dir}/WEB-INF"/>
+    </war>
+    <echo message="WAR created: ${dist.dir}/${war.name}.war"/>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+    <delete dir="${dist.dir}"/>
+  </target>
+
+  <target name="rebuild" depends="clean,dist"/>
+
+</project>
