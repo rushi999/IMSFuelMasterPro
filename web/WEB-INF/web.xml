@@ -25,6 +25,11 @@
     <welcome-file>login.jsp</welcome-file>
   </welcome-file-list>
 
+  <!-- Application bootstrap -->
+  <listener>
+    <listener-class>com.barc.ims.util.AppContextListener</listener-class>
+  </listener>
+
   <!-- Servlets -->
   <servlet>
     <servlet-name>LoginServlet</servlet-name>

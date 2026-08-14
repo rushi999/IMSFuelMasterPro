@@ -79,10 +79,13 @@ sqlplus ims_fuel/ims_fuel123@ORCL @sql/01_schema.sql
 sqlplus ims_fuel/ims_fuel123@ORCL @sql/02_seed_data.sql
 ```
 
-3. Update `web/WEB-INF/web.xml` if your SID/host/port differ:
-```xml
-<param-value>jdbc:oracle:thin:@YOUR_HOST:1521:YOUR_SID</param-value>
+3. Configure database connectivity. The WAR reads values in this order: environment variables, JVM system properties, `web.xml` context params, then built-in defaults. For production, prefer environment variables so credentials are not baked into the WAR:
+```sh
+export IMS_DB_URL=jdbc:oracle:thin:@YOUR_HOST:1521:YOUR_SID
+export IMS_DB_USER=ims_fuel
+export IMS_DB_PASS=change_me
 ```
+You can still edit `web/WEB-INF/web.xml` for development defaults if required.
 
 ---
 
@@ -106,7 +109,31 @@ Place the following files (download once, keep offline):
 
 ---
 
-## STEP 3 — NETBEANS SETUP
+## STEP 3 — COMMAND-LINE BUILD
+
+For a complete deployable WAR from a terminal:
+```sh
+ant clean dist
+```
+The generated artifact is:
+```
+dist/IMSFuelMasterPro.war
+```
+
+To deploy to an existing Tomcat installation after building:
+```sh
+export CATALINA_HOME=/path/to/tomcat
+export IMS_DB_URL=jdbc:oracle:thin:@YOUR_HOST:1521:YOUR_SID
+export IMS_DB_USER=ims_fuel
+export IMS_DB_PASS=change_me
+./scripts/deploy-war.sh
+```
+
+The app will be available at `http://<server>:<port>/IMSFuelMasterPro/` unless `IMS_APP_NAME` is set before running the deploy script.
+
+---
+
+## STEP 4 — NETBEANS SETUP
 
 1. Open NetBeans → **File → Open Project** → select `IMSFuelMasterPro/`
 2. Right-click project → **Properties** → **Libraries** → add Tomcat 7 server
@@ -116,7 +143,7 @@ Place the following files (download once, keep offline):
 
 ---
 
-## STEP 4 — DEFAULT LOGIN
+## STEP 5 — DEFAULT LOGIN
 
 | Username | Password   | Role     |
 |----------|------------|----------|
@@ -157,7 +184,8 @@ Place the following files (download once, keep offline):
 
 - All pages check `session.getAttribute("userId")` and redirect to `login.jsp` if null
 - `AuthFilter` protects `/pages/*` and servlets
-- `DBConnection` reads DB config from `web.xml` context-params
+- `AppContextListener` initialises database settings at startup
+- `DBConnection` reads DB config from environment variables, JVM properties, or `web.xml` context-params
 - `SP_ISSUE_FUEL` stored procedure handles atomic fuel issue + tank level update + transaction log
 - `VehicleFetchServlet` is a JSON endpoint called by JS AJAX (no page reload)
 - `DashboardServlet` exposes `/DashboardServlet?type=kpi` and `?type=tanks` for AJAX refresh
