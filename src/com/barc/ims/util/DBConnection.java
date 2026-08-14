@@ -24,15 +24,38 @@ public class DBConnection {
         }
     }
 
-    /** Call once from a ServletContextListener or startup servlet */
-    public static void init(ServletContext ctx) {
-        if (ctx.getInitParameter("DB_URL")  != null) DB_URL  = ctx.getInitParameter("DB_URL");
-        if (ctx.getInitParameter("DB_USER") != null) DB_USER = ctx.getInitParameter("DB_USER");
-        if (ctx.getInitParameter("DB_PASS") != null) DB_PASS = ctx.getInitParameter("DB_PASS");
+    /**
+     * Initialises database settings from web.xml, system properties or
+     * environment variables. Precedence: environment > JVM property > web.xml
+     * context-param > built-in development defaults.
+     */
+    public static synchronized void init(ServletContext ctx) {
+        if (ctx != null) {
+            DB_URL = firstNonBlank(ctx.getInitParameter("DB_URL"), DB_URL);
+            DB_USER = firstNonBlank(ctx.getInitParameter("DB_USER"), DB_USER);
+            DB_PASS = firstNonBlank(ctx.getInitParameter("DB_PASS"), DB_PASS);
+        }
+
+        DB_URL = firstNonBlank(System.getProperty("IMS_DB_URL"), DB_URL);
+        DB_USER = firstNonBlank(System.getProperty("IMS_DB_USER"), DB_USER);
+        DB_PASS = firstNonBlank(System.getProperty("IMS_DB_PASS"), DB_PASS);
+
+        DB_URL = firstNonBlank(System.getenv("IMS_DB_URL"), DB_URL);
+        DB_USER = firstNonBlank(System.getenv("IMS_DB_USER"), DB_USER);
+        DB_PASS = firstNonBlank(System.getenv("IMS_DB_PASS"), DB_PASS);
     }
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+    }
+
+    public static String getDbUrlForLog() {
+        return DB_URL;
+    }
+
+    private static String firstNonBlank(String value, String fallback) {
+        if (value == null || value.trim().length() == 0) return fallback;
+        return value.trim();
     }
 
     public static void close(Connection conn) {
